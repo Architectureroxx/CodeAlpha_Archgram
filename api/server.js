@@ -1,14 +1,14 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = 3000;
 
 // Increase parsing limits to handle custom base64 uploaded images seamlessly
 app.use(express.json({ limit: '10mb' }));
-// Replace app.use(express.static(...)) with this:
+
+// FIXED: Serve static assets correctly from the root-level public folder relative to /api
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Persistent Mock Databases
+// Persistent Mock Databases (In-Memory per cold start)
 let users = [
     { username: "archit_codes", email: "archit@gmail.com", password: "password123", name: "Archit", bio: "Building dynamic software ecosystems 🚀", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", followers: ["nature_pixel"], following: ["design_studio"] },
     { username: "nature_pixel", email: "elena@gmail.com", password: "password123", name: "Elena Rostova", bio: "Landscape photographer 🌲📷", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", followers: ["archit_codes"], following: ["archit_codes"] },
@@ -58,7 +58,7 @@ app.post('/api/login', (req, res) => {
     return res.json({ success: true, user: { username: user.username, email: user.email } });
 });
 
-// --- SOCIAL CORE API ENDPOINTS ---
+// --- SOCIAL FEED CORE API ENDPOINTS ---
 
 app.post('/api/user-context', (req, res) => {
     const user = users.find(u => u.username === req.body.username);
@@ -123,10 +123,10 @@ app.post('/api/profile/update', (req, res) => {
     res.json({ success: true, user: me });
 });
 
-// Replace your fallback middleware with this:
+// FIXED: Adjust path to look up one level into the public directory for serverless deployment
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
-//app.listen(PORT, () => console.log(`Archgram running smoothly at http://localhost:${PORT}`));
-// Add this at the absolute bottom
+
+// FIXED: Export the express application instead of using app.listen() for Vercel functions
 module.exports = app;
