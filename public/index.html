@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archgram</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes heartPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+        .double-tap-heart { animation: heartPulse 0.7s ease-in-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- AUTHENTICATION VIEW GATEWAY -->
+    <div id="view-auth" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-tr from-amber-500/10 via-rose-500/10 to-indigo-600/10">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full">
+            <h2 id="auth-title" class="text-4xl font-black tracking-tighter text-center mb-6 text-transparent bg-clip-text bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600">Archgram</h2>
+            
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="flex flex-col gap-4">
+                <div id="auth-email-group" class="hidden flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Email Address</label>
+                    <input type="email" id="auth-email" class="border border-slate-200 p-3 rounded-xl text-xs bg-slate-50 focus:outline-rose-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Username</label>
+                    <input type="text" id="auth-user" required class="border border-slate-200 p-3 rounded-xl text-xs bg-slate-50 focus:outline-rose-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Password</label>
+                    <input type="password" id="auth-pass" required class="border border-slate-200 p-3 rounded-xl text-xs bg-slate-50 focus:outline-rose-500">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-xs uppercase shadow-md transition mt-2">Sign In</button>
+            </form>
+            <p class="text-xs text-center text-slate-400 mt-5 font-medium" id="auth-toggle-msg">Don't have an account? <span onclick="toggleAuthMode()" class="text-indigo-600 font-bold cursor-pointer hover:underline">Sign Up</span></p>
+        </div>
+    </div>
+
+    <!-- MAIN APP FLOW -->
+    <div id="main-app" class="hidden max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen bg-white">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 border-b md:border-r border-slate-200 px-4 md:px-6 py-4 md:py-8 flex md:flex-col justify-between items-center md:items-start bg-white sticky top-0 md:h-screen z-30">
+            <div class="flex md:flex-col items-center md:items-start justify-between w-full md:h-full">
+                <h2 onclick="navigateToView('feed')" class="text-2xl font-black tracking-tighter cursor-pointer text-transparent bg-clip-text bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600">Archgram</h2>
+                
+                <nav class="flex md:flex-col gap-1 md:gap-3 md:mt-10 w-auto md:w-full justify-center">
+                    <button onclick="navigateToView('feed')" class="flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-sm text-slate-700 w-full transition"><i class="fa-solid fa-house text-lg"></i> <span class="hidden md:inline">Home</span></button>
+                    <button onclick="toggleModal('create-modal')" class="flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-sm text-slate-700 w-full transition"><i class="fa-regular fa-square-plus text-lg"></i> <span class="hidden md:inline">Create</span></button>
+                    <button onclick="loadUserProfileView()" class="flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-sm text-slate-700 w-full transition"><i class="fa-regular fa-circle-user text-lg"></i> <span class="hidden md:inline">Profile</span></button>
+                    <button onclick="toggleModal('settings-modal')" class="flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-slate-50 font-bold text-sm text-slate-700 w-full transition"><i class="fa-solid fa-gear text-lg"></i> <span class="hidden md:inline">Settings</span></button>
+                    <button onclick="handleLogout()" class="flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-rose-50 text-sm font-bold text-rose-500 w-full transition"><i class="fa-solid fa-power-off text-lg"></i> <span class="hidden md:inline">Logout</span></button>
+                </nav>
+
+                <div id="active-profile-badge" class="hidden md:flex items-center gap-3 mt-auto p-2 bg-slate-50 border rounded-2xl w-full cursor-pointer" onclick="loadUserProfileView()"></div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Screen -->
+        <main class="flex-grow bg-slate-50/40 px-4 sm:px-8 py-8 overflow-y-auto">
+            <!-- SOCIAL FEED -->
+            <section id="view-feed" class="max-w-xl mx-auto grid grid-cols-1 gap-6">
+                <div id="stories-tray" class="bg-white border border-slate-200 p-4 rounded-2xl flex gap-4 overflow-x-auto no-scrollbar shadow-xs"></div>
+                <div id="feed-posts-container" class="flex flex-col gap-6"></div>
+            </section>
+
+            <!-- PROFILE VIEW -->
+            <section id="view-profile" class="hidden max-w-3xl mx-auto">
+                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-12 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs mb-8">
+                    <img id="prof-avatar" src="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border shadow-sm bg-slate-50">
+                    <div class="flex-grow flex flex-col items-center sm:items-start">
+                        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4 mb-3">
+                            <h2 id="prof-username" class="text-2xl font-black text-slate-900"></h2>
+                            <div id="prof-action-area"></div>
+                        </div>
+                        
+                        <div class="flex gap-6 my-3 border-y border-slate-100 py-2.5 w-full sm:w-auto justify-center text-sm">
+                            <div><span id="count-posts" class="font-bold text-slate-900">0</span> <span class="text-slate-400">posts</span></div>
+                            <div class="cursor-pointer" onclick="openConnectionList('followers')"><span id="count-followers" class="font-bold text-slate-900">0</span> <span class="text-slate-400">followers</span></div>
+                            <div class="cursor-pointer" onclick="openConnectionList('following')"><span id="count-following" class="font-bold text-slate-900">0</span> <span class="text-slate-400">following</span></div>
+                        </div>
+                        <h4 id="prof-name" class="font-extrabold text-slate-900 mt-2 text-sm"></h4>
+                        <p id="prof-bio" class="text-xs text-slate-500 mt-1 leading-relaxed"></p>
+                    </div>
+                </div>
+                <div id="profile-posts-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: Create Post with Local Device Image Uploader -->
+    <div id="create-modal" class="fixed inset-0 bg-slate-950/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 relative">
+            <button onclick="toggleModal('create-modal')" class="absolute top-4 right-4 text-xl text-slate-400">&times;</button>
+            <h3 class="text-lg font-black text-slate-900 mb-4">Create Post</h3>
+            <form onsubmit="handleCreatePostSubmit(event)" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1 border border-dashed border-slate-300 p-4 rounded-xl text-center bg-slate-50 cursor-pointer hover:bg-slate-100/50">
+                    <label for="post-img-file" class="cursor-pointer text-xs font-bold text-slate-500 flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl text-indigo-500"></i>
+                        <span>Upload From Local Device</span>
+                    </label>
+                    <input type="file" id="post-img-file" accept="image/*" required class="hidden" onchange="previewUploadedFile(event)">
+                </div>
+                <div id="upload-preview-box" class="hidden w-full h-40 bg-slate-100 rounded-xl overflow-hidden border">
+                    <img id="upload-preview-img" class="w-full h-full object-cover">
+                </div>
+                <textarea id="post-caption" required placeholder="Write a caption..." rows="3" class="border p-3 rounded-xl text-xs bg-slate-50 focus:outline-rose-500 resize-none"></textarea>
+                <button type="submit" class="bg-rose-600 text-white font-bold py-3 rounded-xl text-xs uppercase shadow-md">Share Post</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Settings -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 relative flex flex-col max-h-[85vh]">
+            <button onclick="toggleModal('settings-modal')" class="absolute top-4 right-4 text-xl text-slate-400">&times;</button>
+            <h3 class="text-lg font-black text-slate-900 mb-4"><i class="fa-solid fa-sliders text-indigo-500 mr-2"></i>Settings</h3>
+            <form onsubmit="handleProfileUpdate(event)" class="flex flex-col gap-3.5 overflow-y-auto pr-1">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Change Name</label>
+                    <input type="text" id="edit-name" class="border p-2.5 rounded-xl text-xs bg-slate-50 focus:outline-indigo-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Change Avatar URL</label>
+                    <input type="url" id="edit-avatar" class="border p-2.5 rounded-xl text-xs bg-slate-50 focus:outline-indigo-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Update Biography</label>
+                    <textarea id="edit-bio" rows="2" class="border p-2.5 rounded-xl text-xs bg-slate-50 focus:outline-indigo-500 resize-none"></textarea>
+                </div>
+                <button type="submit" class="bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs uppercase mt-2">Save Profile Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Connections -->
+    <div id="connections-modal" class="fixed inset-0 bg-slate-950/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 relative flex flex-col max-h-[50vh]">
+            <button onclick="toggleModal('connections-modal')" class="absolute top-3 right-4 text-xl text-slate-400">&times;</button>
+            <h4 id="connections-title" class="text-sm font-black text-slate-900 uppercase border-b pb-2 mb-3">Network Connections</h4>
+            <div id="connections-list-box" class="overflow-y-auto flex flex-grow flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Stories Viewer -->
+    <div id="story-viewer-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-4" onclick="toggleModal('story-viewer-modal')">
+        <div class="max-w-sm w-full relative flex flex-col items-center justify-center">
+            <div class="absolute top-4 left-4 flex items-center gap-2 text-white z-10">
+                <img id="story-prof-avatar" class="w-8 h-8 rounded-full border border-white/20 object-cover">
+                <span id="story-prof-username" class="text-xs font-bold shadow-xs"></span>
+            </div>
+            <img id="story-viewer-content" class="w-full h-auto max-h-[80vh] object-contain rounded-xl shadow-2xl">
+        </div>
+    </div>
+
+    <!-- Application Script Logic Controller -->
+    <script>
+        let myProfile = null;
+        let activeViewScreen = 'feed';
+        let lastTapTime = 0;
+        let activeAuthMode = 'login';
+        let base64UploadString = "";
+
+        // FIXED: Resolved target element naming logic mapping explicitly
+        function toggleAuthMode() {
+            activeAuthMode = activeAuthMode === 'login' ? 'register' : 'login';
+            
+            const titleEl = document.getElementById('auth-title');
+            if (titleEl) titleEl.innerText = activeAuthMode === 'login' ? 'Archgram' : 'Create Account';
+            
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.innerText = activeAuthMode === 'login' ? 'Sign In' : 'Register Account';
+            
+            document.getElementById('auth-email-group').classList.toggle('hidden', activeAuthMode === 'login');
+            document.getElementById('auth-toggle-msg').innerHTML = activeAuthMode === 'login' ? 
+                `Don't have an account? <span onclick="toggleAuthMode()" class="text-indigo-600 font-bold cursor-pointer hover:underline">Sign Up</span>` :
+                `Already have an account? <span onclick="toggleAuthMode()" class="text-indigo-600 font-bold cursor-pointer hover:underline">Log In</span>`;
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('auth-user').value.trim();
+            const password = document.getElementById('auth-pass').value;
+            const email = document.getElementById('auth-email').value.trim();
+
+            const endpoint = activeAuthMode === 'login' ? '/api/login' : '/api/register';
+            const payload = activeAuthMode === 'login' ? { username, password } : { username, email, password };
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.message || "Authentication failed.");
+
+                if (activeAuthMode === 'login') {
+                    localStorage.setItem('archgram_user', username);
+                    await bootstrapAppWorkspace();
+                } else {
+                    alert("Account registered successfully! Proceeding to login.");
+                    toggleAuthMode();
+                }
+            } catch (err) { alert(err.message); }
+        }
+
+        async function bootstrapAppWorkspace() {
+            const activeUser = localStorage.getItem('archgram_user');
+            if(!activeUser) {
+                document.getElementById('view-auth').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+                return;
+            }
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+
+            const res = await fetch('/api/user-context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: activeUser })
+            });
+            myProfile = await res.json();
+            
+            document.getElementById('active-profile-badge').innerHTML = `
+                <img src="${myProfile.avatar}" class="w-9 h-9 rounded-full object-cover border">
+                <div class="flex flex-col text-left"><span class="text-xs font-bold text-slate-800 leading-tight">${myProfile.username}</span></div>`;
+            
+            await fetchFeedElements();
+            await fetchStoriesTray();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('archgram_user');
+            myProfile = null;
+            document.getElementById('view-auth').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+        }
+
+        async function fetchFeedElements() {
+            const res = await fetch('/api/posts');
+            const posts = await res.json();
+            if(activeViewScreen === 'feed') renderSocialFeed(posts);
+        }
+
+        async function fetchStoriesTray() {
+            const res = await fetch('/api/stories');
+            const data = await res.json();
+            const tray = document.getElementById('stories-tray');
+            tray.innerHTML = `
+                <div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+                    <div class="w-14 h-14 rounded-full ring-2 ring-slate-200 p-0.5"><img src="${myProfile.avatar}" class="w-full h-full rounded-full object-cover"></div>
+                    <span class="text-[10px] text-slate-400 font-bold">Your Story</span>
+                </div>`;
+            data.forEach(s => {
+                tray.innerHTML += `
+                    <div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onclick="openStoryViewer('${s.username}', '${s.avatar}', '${s.content}')">
+                        <div class="w-14 h-14 rounded-full ring-2 ring-rose-500 p-0.5"><img src="${s.avatar}" class="w-full h-full rounded-full object-cover"></div>
+                        <span class="text-[10px] text-slate-700 font-medium">${s.username}</span>
+                    </div>`;
+            });
+        }
+
+        function renderSocialFeed(postsList) {
+            const container = document.getElementById('feed-posts-container');
+            container.innerHTML = '';
+            postsList.forEach(p => {
+                const hasLiked = p.likes.includes(myProfile.username);
+                const likeIconClass = hasLiked ? 'fa-solid fa-heart text-rose-500 scale-110' : 'fa-regular fa-heart text-slate-700';
+                
+                container.innerHTML += `
+                    <article class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col w-full shadow-xs">
+                        <div class="p-4 flex items-center gap-3 border-b border-slate-100">
+                            <span class="text-xs font-black text-slate-900 cursor-pointer hover:underline" onclick="loadUserProfileView('${p.username}')">${p.username}</span>
+                            <span class="text-[10px] text-slate-400 ml-auto font-medium">${p.timestamp}</span>
+                        </div>
+                        <div class="relative overflow-hidden bg-slate-50 select-none cursor-pointer" onclick="handlePostTouch(event, '${p.id}')">
+                            <img src="${p.img}" class="w-full h-auto max-h-[500px] object-cover mx-auto">
+                            <i id="heart-pulse-${p.id}" class="fa-solid fa-heart text-white text-7xl absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 pointer-events-none scale-0"></i>
+                        </div>
+                        <div class="p-4 flex flex-col gap-2">
+                            <div class="flex items-center gap-4 text-xl"><button onclick="toggleLikeAction('${p.id}')"><i class="${likeIconClass}"></i></button></div>
+                            <p class="text-xs font-black text-slate-900">${p.likes.length} likes</p>
+                            <p class="text-xs text-slate-700"><span class="font-extrabold text-slate-900 mr-1">${p.username}</span> ${p.caption}</p>
+                            <div class="mt-1 border-t border-slate-50 pt-2">${p.comments.map(c => `<p class="text-xs text-slate-700 mt-1"><span class="font-bold text-slate-900 mr-1">${c.username}</span> ${c.text}</p>`).join('')}</div>
+                            <form onsubmit="handleCommentSubmit(event, '${p.id}')" class="flex gap-2 border-t pt-3 mt-1 items-center">
+                                <input type="text" id="comment-input-${p.id}" placeholder="Add a comment..." required class="text-xs flex-grow focus:outline-none text-slate-700">
+                                <button type="submit" class="text-xs font-bold text-rose-500 px-2">Post</button>
+                            </form>
+                        </div>
+                    </article>`;
+            });
+        }
+
+        function previewUploadedFile(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64UploadString = e.target.result;
+                document.getElementById('upload-preview-img').src = base64UploadString;
+                document.getElementById('upload-preview-box').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handlePostTouch(e, postId) {
+            const now = Date.now();
+            if (now - lastTapTime < 300) {
+                const heart = document.getElementById(`heart-pulse-${postId}`);
+                heart.className = "fa-solid fa-heart text-white text-7xl absolute top-1/2 left-1/2 double-tap-heart";
+                
+                setTimeout(() => {
+                    heart.className = "fa-solid fa-heart text-white text-7xl absolute top-1/2 left-1/2 opacity-0 scale-0 pointer-events-none";
+                }, 700);
+                
+                toggleLikeAction(postId);
+            }
+            lastTapTime = now;
+        }
+
+        async function toggleLikeAction(postId) {
+            await fetch(`/api/posts/${postId}/like`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: myProfile.username }) 
+            });
+            await fetchFeedElements();
+            if(activeViewScreen === 'profile') loadUserProfileView(document.getElementById('prof-username').innerText);
+        }
+
+        async function handleCommentSubmit(e, postId) {
+            e.preventDefault();
+            const input = document.getElementById(`comment-input-${postId}`);
+            await fetch(`/api/posts/${postId}/comment`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: myProfile.username, text: input.value.trim() }) });
+            input.value = '';
+            await fetchFeedElements();
+        }
+
+        async function handleCreatePostSubmit(e) {
+            e.preventDefault();
+            if(!base64UploadString) return alert("Please upload an image asset first.");
+
+            await fetch('/api/posts', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ username: myProfile.username, img: base64UploadString, caption: document.getElementById('post-caption').value }) 
+            });
+            
+            base64UploadString = "";
+            document.getElementById('upload-preview-box').classList.add('hidden');
+            e.target.reset(); 
+            toggleModal('create-modal');
+            await fetchFeedElements(); 
+            navigateToView('feed');
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            const res = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ myUsername: myProfile.username, name: document.getElementById('edit-name').value, bio: document.getElementById('edit-bio').value, avatar: document.getElementById('edit-avatar').value })
+            });
+            if(res.ok) { toggleModal('settings-modal'); await bootstrapAppWorkspace(); loadUserProfileView(); }
+        }
+
+        async function loadUserProfileView(targetUsername = null) {
+            const name = targetUsername || myProfile.username;
+            navigateToView('profile');
+            const res = await fetch(`/api/users/${name}`);
+            const data = await res.json();
+
+            document.getElementById('prof-avatar').src = data.user.avatar;
+            document.getElementById('prof-username').innerText = data.user.username;
+            document.getElementById('prof-name').innerText = data.user.name;
+            document.getElementById('prof-bio').innerText = data.user.bio;
+            document.getElementById('count-posts').innerText = data.posts.length;
+            document.getElementById('count-followers').innerText = data.user.followers.length;
+            document.getElementById('count-following').innerText = data.user.following.length;
+
+            const area = document.getElementById('prof-action-area');
+            if(name === myProfile.username) area.innerHTML = `<button onclick="toggleModal('settings-modal')" class="bg-slate-100 border border-slate-200 text-xs font-bold px-4 py-1.5 rounded-lg text-slate-700">Edit Profile</button>`;
+            else {
+                const isFollowing = data.user.followers.includes(myProfile.username);
+                area.innerHTML = `<button onclick="toggleFollowAction('${data.user.username}')" class="text-xs font-bold px-5 py-1.5 rounded-lg ${isFollowing ? 'bg-slate-100 text-slate-700 border' : 'bg-rose-600 text-white'}">${isFollowing ? 'Following' : 'Follow'}</button>`;
+            }
+
+            const grid = document.getElementById('profile-posts-grid'); grid.innerHTML = '';
+            data.posts.forEach(p => {
+                grid.innerHTML += `
+                    <div class="relative aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-xs border cursor-pointer group">
+                        <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                    </div>`;
+            });
+        }
+
+        async function openConnectionList(type) {
+            const name = document.getElementById('prof-username').innerText;
+            const res = await fetch(`/api/users/${name}`);
+            const data = await res.json();
+            const list = type === 'followers' ? data.user.followers : data.user.following;
+            
+            document.getElementById('connections-title').innerText = type;
+            const container = document.getElementById('connections-list-box');
+            container.innerHTML = '';
+            
+            if(list.length === 0) container.innerHTML = '<p class="text-slate-400 text-xs text-center py-4">List Empty</p>';
+            list.forEach(username => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg cursor-pointer hover:bg-slate-100" onclick="toggleModal('connections-modal'); loadUserProfileView('${username}')">
+                        <span class="text-xs font-bold text-slate-900">${username}</span>
+                    </div>`;
+            });
+            toggleModal('connections-modal');
+        }
+
+        async function toggleFollowAction(name) {
+            await fetch(`/api/users/${name}/follow`, { method: 'POST', headers: {'Content-Type' : 'application/json'}, body: JSON.stringify({ myUsername: myProfile.username }) });
+            await bootstrapAppWorkspace(); loadUserProfileView(name);
+        }
+
+        function openStoryViewer(user, avatar, imgUrl) {
+            document.getElementById('story-prof-avatar').src = avatar;
+            document.getElementById('story-prof-username').innerText = user;
+            document.getElementById('story-viewer-content').src = imgUrl;
+            toggleModal('story-viewer-modal');
+        }
+
+        function navigateToView(screenName) {
+            activeViewScreen = screenName;
+            document.getElementById('view-feed').classList.toggle('hidden', screenName !== 'feed');
+            document.getElementById('view-profile').classList.toggle('hidden', screenName !== 'profile');
+            if(screenName === 'feed') fetchFeedElements();
+        }
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        // Trigger session workspace parsing upon component mounting
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('archgram_user')) bootstrapAppWorkspace();
+        });
+    </script>
+</body>
+</html>
